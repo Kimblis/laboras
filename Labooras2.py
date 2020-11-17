@@ -3,11 +3,17 @@ from matplotlib import cm
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
 import numpy as np
 from sympy import*
+from mpl_toolkits.mplot3d import Axes3D
 
-# Apibrezimo sritis
+# Apibrezimo sritis, bei 6x5 tinklelis(gridas)
 xrang = np.array([-5, 5])
 yrang = np.array([-2, 2])
-s = 5
+a = 6
+b = 5
+
+
+def f(t):
+    return F.subs([(x, t[0]), (y, t[1])])
 
 
 def grafikas(X, Y, Z):
@@ -22,18 +28,30 @@ def grafikas(X, Y, Z):
     plt.show()
 
 
-def grid(xrang, yrang, step):
-    xstep = (xrang[1]-xrang[0])/step
-    ystep = (yrang[1]-yrang[0])/step
+def grid(xrang, yrang, a, b):
+    xstep = (xrang[1]-xrang[0])/(a-1)
+    ystep = (yrang[1]-yrang[0])/(b-1)
     x = xrang[0]
     cords = []
-    for i in range(0, step+1):
+    for i in range(0, a):
         y = yrang[0]
-        for j in range(0, step+1):
+        for j in range(0, b):
             cords.append(np.array([x, y]))
             y += ystep
         x += xstep
     return cords
+
+
+def uniq(items):
+    u = []
+    u.append(items[0])
+    for i in range(1, len(items)):
+        for j in range(len(u)):
+            if np.all(items[i] == u[j]):
+                break
+            else:
+                u = u + [items[i]]
+    return u
 
 
 def gradientas(t, Fdx, Fdy):
@@ -49,10 +67,10 @@ def ilgis(x, y):
 
 
 # Grafiko braizymui
-xx = np.arange(-5, 6, 1)
-yy = np.arange(-2, 3, 1)
+xx = np.arange(-5, 5, 0.1)
+yy = np.arange(-2, 2, 0.1)
 xx, yy = np.meshgrid(xx, yy)
-zz = -(yy - np.cos(xx+2*yy) + np.sin(xx-3*yy))
+zz = (yy - np.cos(xx+2*yy) + np.sin(xx-3*yy))
 grafikas(xx, yy, zz)
 
 # Funkcija ir jos dalines isvestines
@@ -61,25 +79,22 @@ F = (y - cos(x+2*y) + sin(x-3*y))
 Fdx = diff(F, x)
 Fdy = diff(F, y)
 
-gridas = grid(xrang, yrang, s)
-
-opt = true
-t = gridas[0]
 alpha = 0.1
-eps = 1e-5
-fnk2 = -1e10
-fnk = F.subs([(x, t[0]), (y, t[1])])
-iterNr = 1
-iterMax = 700
-stp_dir = 0.5
-grad = gradientas(t, Fdx, Fdy)
-t2 = t + grad
-
-
+gridas = grid(xrang, yrang, a, b)
+ekstremumai = []
 for i in gridas:
     t = i
+    iterNr = 1
+    minimalus_skirtumas = 0.2
+    alpha = 0.1
+    fnk2 = -1e10
+    opt = true
+    eps = 1e-5
+    iterMax = 700
+    stp_dir = 0.5
+    fnk = f(t)
     grad = gradientas(t, Fdx, Fdy)
-    print(grad)
+    t2 = t + grad
     while (abs(grad[0]) > eps or abs(grad[1]) > eps) and (ilgis(t[0]-t2[0], t[1]-t2[1]) > eps) and (iterNr < iterMax):
         if(fnk > fnk2) or opt:
             grad = gradientas(t, Fdx, Fdy)
@@ -92,6 +107,44 @@ for i in gridas:
         iterNr += 1
         t2 = t
         t = t + grad * alpha
-        print("Iteracijoje ", iterNr, "zingsnis ", alpha, "o artinys", t)
-        print(fnk)
-    print('Minimumo tasko artinys: ', t, 'po ', iterNr, 'iteraciju')
+    if len(ekstremumai) == 0:
+        ekstremumai.append(t)
+    else:
+        tinka = False
+        for eks in ekstremumai:
+            p1 = (eks[0] - t[0])**2
+            p2 = (eks[1] - t[1])**2
+            skirtumas = sqrt(p1+p2)
+            if skirtumas > minimalus_skirtumas:
+                tinka = True
+                break
+        if tinka:
+            ekstremumai.append(t)
+    #     print("Iteracijoje ", iterNr, "zingsnis ", alpha, "o artinys", t)
+    # print('Minimumo tasko artinys: ', t, 'po ', iterNr, 'iteraciju')
+
+
+# print(ekstremumai)
+# minimumai = []
+# for grad in ekstremumai:
+#     minimumas = f(grad)
+#     minimumai.append(minimumas)
+
+# print(minimumai)
+# gradmin = None
+# z = 0
+# for grad in ekstremumai:
+#     if f(grad) > z:
+#         z = f(grad)
+#         gradmin = grad
+
+# print(f'Gautas minimumo taskas:( {str(gradmin[0])} , {str(gradmin[1])} )')
+# print(f'Gautas minimumas: {str(z)}')
+
+# xxx = []
+# yyy = []
+# zzz = []
+# for grad in ekstremumai:
+#     xxx.append(grad[0])
+#     yyy.append(grad[1])
+#     zzz.append(f(grad))
